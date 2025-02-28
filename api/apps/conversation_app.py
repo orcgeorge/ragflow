@@ -37,6 +37,7 @@ from graphrag.general.mind_map_extractor import MindMapExtractor
 @manager.route('/set', methods=['POST'])  # noqa: F821
 @login_required
 def set_conversation():
+    print("conversation_app!!!!!")
     req = request.json
     conv_id = req.get("conversation_id")
     is_new = req.get("is_new")

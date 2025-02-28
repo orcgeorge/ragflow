@@ -5,6 +5,9 @@ export interface ISegmentedContentProps {
   show: boolean;
   form: FormInstance;
   setHasError: (hasError: boolean) => void;
+  isSuperuser?: boolean;
+  initialLlmSetting?: any;
+  visible?: boolean;
 }
 
 export interface IVariable {

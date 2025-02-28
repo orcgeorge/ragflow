@@ -37,9 +37,6 @@ const Login = () => {
           email: `${params.email}`.trim(),
           password: rsaPassWord,
         });
-        if (code === 0) {
-          navigate('/knowledge');
-        }
       } else {
         const code = await register({
           nickname: params.nickname,

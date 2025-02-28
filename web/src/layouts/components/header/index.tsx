@@ -24,16 +24,25 @@ const RagHeader = () => {
   const { t } = useTranslate('header');
   const appConf = useFetchAppConf();
   const { theme: themeRag } = useTheme();
-  const tagsData = useMemo(
-    () => [
+
+  // 获取用户信息，包括 is_superuser 状态
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+  const isSuperuser = userInfo.is_superuser;
+
+  const tagsData = useMemo(() => {
+    const allTags = [
       { path: '/knowledge', name: t('knowledgeBase'), icon: KnowledgeBaseIcon },
       { path: '/chat', name: t('chat'), icon: MessageOutlined },
       { path: '/search', name: t('search'), icon: SearchOutlined },
       { path: '/flow', name: t('flow'), icon: GraphIcon },
       { path: '/file', name: t('fileManager'), icon: FileIcon },
-    ],
-    [t],
-  );
+    ];
+
+    // 如果不是管理员，过滤掉 knowledgeBase 和 flow 标签
+    return isSuperuser
+      ? allTags
+      : allTags.filter((tag) => !['/knowledge', '/flow'].includes(tag.path));
+  }, [t, isSuperuser]);
 
   const currentPath = useMemo(() => {
     return (
@@ -51,7 +60,7 @@ const RagHeader = () => {
   );
 
   const handleLogoClick = useCallback(() => {
-    navigate('/');
+    navigate('/chat');
   }, [navigate]);
 
   return (
@@ -65,12 +74,14 @@ const RagHeader = () => {
         height: '72px',
       }}
     >
-      <a href={window.location.origin}>
-        <Space
-          size={12}
-          onClick={handleLogoClick}
-          className={styles.logoWrapper}
-        >
+      <a
+        href="#"
+        onClick={(e) => {
+          e.preventDefault();
+          handleLogoClick();
+        }}
+      >
+        <Space size={12} className={styles.logoWrapper}>
           <img src="/logo.svg" alt="" className={styles.appIcon} />
           <span className={styles.appName}>{appConf.appName}</span>
         </Space>

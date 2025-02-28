@@ -30,19 +30,24 @@ export const useLogin = () => {
       const { data: res = {}, response } = await userService.login(params);
       if (res.code === 0) {
         const { data } = res;
-        message.success(t('message.logged'));
+        message.success({
+          content: t('message.logged'),
+          duration: 1,
+        });
         const authorization = response.headers.get(Authorization);
         const token = data.access_token;
         const userInfo = {
           avatar: data.avatar,
           name: data.nickname,
           email: data.email,
+          is_superuser: data.is_superuser,
         };
         authorizationUtil.setItems({
           Authorization: authorization,
           userInfo: JSON.stringify(userInfo),
           Token: token,
         });
+        history.push('/chat');
       }
       return res.code;
     },

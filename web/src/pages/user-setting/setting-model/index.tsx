@@ -66,6 +66,10 @@ const ModelCard = ({ item, clickApiKey }: IModelCardProps) => {
   const { handleDeleteLlm } = useHandleDeleteLlm(item.name);
   const { handleDeleteFactory } = useHandleDeleteFactory(item.name);
 
+  // 获取用户信息，检查是否是管理员
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+  const isSuperuser = userInfo.is_superuser;
+
   const handleApiKeyClick = () => {
     clickApiKey(item.name);
   };
@@ -91,33 +95,39 @@ const ModelCard = ({ item, clickApiKey }: IModelCardProps) => {
           </Col>
           <Col span={12} className={styles.factoryOperationWrapper}>
             <Space size={'middle'}>
-              <Button onClick={handleApiKeyClick}>
-                <Flex align="center" gap={4}>
-                  {isLocalLlmFactory(item.name) ||
-                  item.name === 'VolcEngine' ||
-                  item.name === 'Tencent Hunyuan' ||
-                  item.name === 'XunFei Spark' ||
-                  item.name === 'BaiduYiyan' ||
-                  item.name === 'Fish Audio' ||
-                  item.name === 'Tencent Cloud' ||
-                  item.name === 'Google Cloud' ||
-                  item.name === 'Azure OpenAI'
-                    ? t('addTheModel')
-                    : 'API-Key'}
-                  <SettingOutlined />
-                </Flex>
-              </Button>
+              {/* 只有管理员可以看到添加模型按钮 */}
+              {isSuperuser && (
+                <Button onClick={handleApiKeyClick}>
+                  <Flex align="center" gap={4}>
+                    {isLocalLlmFactory(item.name) ||
+                    item.name === 'VolcEngine' ||
+                    item.name === 'Tencent Hunyuan' ||
+                    item.name === 'XunFei Spark' ||
+                    item.name === 'BaiduYiyan' ||
+                    item.name === 'Fish Audio' ||
+                    item.name === 'Tencent Cloud' ||
+                    item.name === 'Google Cloud' ||
+                    item.name === 'Azure OpenAI'
+                      ? t('addTheModel')
+                      : 'API-Key'}
+                    <SettingOutlined />
+                  </Flex>
+                </Button>
+              )}
               <Button onClick={handleShowMoreClick}>
                 <Flex align="center" gap={4}>
                   {t('showMoreModels')}
                   <MoreModelIcon />
                 </Flex>
               </Button>
-              <Button type={'text'} onClick={handleDeleteFactory}>
-                <Flex align="center">
-                  <CloseCircleOutlined style={{ color: '#D92D20' }} />
-                </Flex>
-              </Button>
+              {/* 只有管理员可以看到删除按钮 */}
+              {isSuperuser && (
+                <Button type={'text'} onClick={handleDeleteFactory}>
+                  <Flex align="center">
+                    <CloseCircleOutlined style={{ color: '#D92D20' }} />
+                  </Flex>
+                </Button>
+              )}
             </Space>
           </Col>
         </Row>
@@ -130,11 +140,17 @@ const ModelCard = ({ item, clickApiKey }: IModelCardProps) => {
               <List.Item>
                 <Space>
                   {item.name} <Tag color="#b8b8b8">{item.type}</Tag>
-                  <Tooltip title={t('delete', { keyPrefix: 'common' })}>
-                    <Button type={'text'} onClick={handleDeleteLlm(item.name)}>
-                      <CloseCircleOutlined style={{ color: '#D92D20' }} />
-                    </Button>
-                  </Tooltip>
+                  {/* 只有管理员可以看到删除按钮 */}
+                  {isSuperuser && (
+                    <Tooltip title={t('delete', { keyPrefix: 'common' })}>
+                      <Button
+                        type={'text'}
+                        onClick={handleDeleteLlm(item.name)}
+                      >
+                        <CloseCircleOutlined style={{ color: '#D92D20' }} />
+                      </Button>
+                    </Tooltip>
+                  )}
                 </Space>
               </List.Item>
             )}
@@ -354,6 +370,10 @@ const UserSettingModel = () => {
     },
   ];
 
+  // 获取用户信息，检查是否是管理员
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+  const isSuperuser = userInfo.is_superuser;
+
   return (
     <section id="xx" className={styles.modelWrapper}>
       <Spin spinning={loading}>
@@ -361,7 +381,7 @@ const UserSettingModel = () => {
           <SettingTitle
             title={t('model')}
             description={t('modelDescription')}
-            showRightButton
+            showRightButton={isSuperuser}
             clickButton={showSystemSettingModal}
           ></SettingTitle>
           <Divider></Divider>

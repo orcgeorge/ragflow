@@ -100,6 +100,7 @@ def login():
     user = UserService.query_user(email, password)
     if user:
         response_data = user.to_json()
+        response_data['is_superuser'] = user.is_superuser
         user.access_token = get_uuid()
         login_user(user)
         user.update_time = (current_timestamp(),)

@@ -12,7 +12,7 @@ import { removeUselessFieldsFromValues } from '@/utils/form';
 import { Divider, Flex, Form, Modal, Segmented, UploadFile } from 'antd';
 import { SegmentedValue } from 'antd/es/segmented';
 import camelCase from 'lodash/camelCase';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { IPromptConfigParameters } from '../interface';
 import AssistantSetting from './assistant-setting';
 import ModelSetting from './model-setting';
@@ -65,13 +65,25 @@ const ChatConfigurationModal = ({
 }: IProps) => {
   const [form] = Form.useForm();
   const [hasError, setHasError] = useState(false);
+  const { t } = useTranslate('chat');
+
+  // 获取用户信息，检查是否是管理员
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+  const isSuperuser = userInfo.is_superuser;
+
+  // 根据用户权限过滤可见的标签页
+  const visibleSegments = useMemo(() => {
+    if (isSuperuser) {
+      return Object.values(ConfigurationSegmented);
+    }
+    return [ConfigurationSegmented.AssistantSetting];
+  }, [isSuperuser]);
 
   const [value, setValue] = useState<ConfigurationSegmented>(
     ConfigurationSegmented.AssistantSetting,
   );
   const promptEngineRef = useRef<Array<IPromptConfigParameters>>([]);
   const modelId = useFetchModelId();
-  const { t } = useTranslate('chat');
 
   const handleOk = async () => {
     const values = await form.validateFields();
@@ -157,7 +169,7 @@ const ChatConfigurationModal = ({
         size={'large'}
         value={value}
         onChange={handleSegmentedChange}
-        options={Object.values(ConfigurationSegmented).map((x) => ({
+        options={visibleSegments.map((x) => ({
           label: t(camelCase(x)),
           value: x,
         }))}
@@ -172,20 +184,27 @@ const ChatConfigurationModal = ({
         validateMessages={validateMessages}
         colon={false}
       >
-        {Object.entries(segmentedMap).map(([key, Element]) => (
-          <Element
-            key={key}
-            show={key === value}
-            form={form}
-            setHasError={setHasError}
-            {...(key === ConfigurationSegmented.ModelSetting
-              ? { initialLlmSetting: initialDialog.llm_setting, visible }
-              : {})}
-            {...(key === ConfigurationSegmented.PromptEngine
-              ? { ref: promptEngineRef }
-              : {})}
-          ></Element>
-        ))}
+        {Object.entries(segmentedMap).map(([key, Element]) => {
+          // 如果不是管理员且不是助理设置页面，则不渲染
+          if (!isSuperuser && key !== ConfigurationSegmented.AssistantSetting) {
+            return null;
+          }
+          return (
+            <Element
+              key={key}
+              show={key === value}
+              form={form}
+              setHasError={setHasError}
+              isSuperuser={isSuperuser} // 传递管理员状态到子组件
+              {...(key === ConfigurationSegmented.ModelSetting
+                ? { initialLlmSetting: initialDialog.llm_setting, visible }
+                : {})}
+              {...(key === ConfigurationSegmented.PromptEngine
+                ? { ref: promptEngineRef }
+                : {})}
+            ></Element>
+          );
+        })}
       </Form>
     </Modal>
   );

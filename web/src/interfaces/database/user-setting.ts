@@ -91,4 +91,7 @@ export interface ITenant {
   role: string;
   tenant_id: string;
   update_date: string;
+  name: string;
+  owner_name: string;
+  owner_email: string;
 }

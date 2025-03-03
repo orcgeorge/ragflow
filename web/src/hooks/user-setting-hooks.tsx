@@ -353,6 +353,29 @@ export const useListTenant = () => {
   return { data, loading, refetch };
 };
 
+export const useListTenant2 = () => {
+  const { data: userInfo } = useFetchUserInfo();
+  const userId = userInfo.id;
+
+  const {
+    data,
+    isFetching: loading,
+    refetch,
+  } = useQuery<ITenant[]>({
+    queryKey: ['listTenant', userId],
+    initialData: [],
+    gcTime: 0,
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await listTenant();
+
+      return data?.data ?? [];
+    },
+  });
+
+  return { data, loading, refetch };
+};
+
 export const useAgreeTenant = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();

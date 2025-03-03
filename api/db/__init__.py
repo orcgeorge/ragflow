@@ -28,6 +28,7 @@ class UserTenantRole(StrEnum):
     ADMIN = 'admin'
     NORMAL = 'normal'
     INVITE = 'invite'
+    PENDING = 'pending'
 
 
 class TenantPermission(StrEnum):

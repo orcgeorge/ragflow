@@ -1,53 +1,71 @@
-import {
-  useFetchUserInfo,
-  useListTenantUser,
-} from '@/hooks/user-setting-hooks';
-import { Button, Card, Flex, Space } from 'antd';
+import { useFetchUserInfo, useListTenant } from '@/hooks/user-setting-hooks';
+import { PlusOutlined, TeamOutlined } from '@ant-design/icons';
+import { Button, Card, Space, Typography } from 'antd';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-import { TeamOutlined, UserAddOutlined, UserOutlined } from '@ant-design/icons';
-import AddingUserModal from './add-user-modal';
-import { useAddUser } from './hooks';
+import { TenantRole } from '../constants';
+import AllTeamsTable from './all-teams-table';
+import CreateTeamModal from './create-team-modal';
 import styles from './index.less';
+import MyTeamMembersTable from './my-team-members-table';
 import TenantTable from './tenant-table';
-import UserTable from './user-table';
 
+const { Text } = Typography;
 const iconStyle = { fontSize: 20, color: '#1677ff' };
 
 const UserSettingTeam = () => {
   const { data: userInfo } = useFetchUserInfo();
+  const { data: tenants } = useListTenant();
   const { t } = useTranslation();
-  useListTenantUser();
-  const {
-    addingTenantModalVisible,
-    hideAddingTenantModal,
-    showAddingTenantModal,
-    handleAddUserOk,
-  } = useAddUser();
+  const [createModalVisible, setCreateModalVisible] = useState(false);
+
+  // 找到用户创建的团队
+  const ownerTeam = tenants?.find((team) => team.role === TenantRole.Owner);
+
+  const handleCreateSuccess = () => {
+    setCreateModalVisible(false);
+    // 刷新团队列表
+  };
 
   return (
     <div className={styles.teamWrapper}>
-      <Card className={styles.teamCard}>
-        <Flex align="center" justify={'space-between'}>
-          <span>
-            {userInfo.nickname} {t('setting.workspace')}
-          </span>
-          <Button type="primary" onClick={showAddingTenantModal}>
-            <UserAddOutlined />
-            {t('setting.invite')}
-          </Button>
-        </Flex>
-      </Card>
       <Card
         title={
           <Space>
-            <UserOutlined style={iconStyle} /> {t('setting.teamMembers')}
+            <TeamOutlined style={iconStyle} />
+            <Text>{t('setting.allTeams')}</Text>
           </Space>
+        }
+        extra={
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setCreateModalVisible(true)}
+          >
+            {t('setting.createTeam')}
+          </Button>
         }
         bordered={false}
       >
-        <UserTable></UserTable>
+        <AllTeamsTable />
       </Card>
+
+      {ownerTeam && (
+        <Card
+          title={
+            <Space>
+              <TeamOutlined style={iconStyle} /> {t('setting.myTeamManagement')}
+            </Space>
+          }
+          bordered={false}
+        >
+          <MyTeamMembersTable
+            tenantId={ownerTeam.tenant_id}
+            currentUserId={userInfo?.id || ''}
+          />
+        </Card>
+      )}
+
       <Card
         title={
           <Space>
@@ -56,15 +74,14 @@ const UserSettingTeam = () => {
         }
         bordered={false}
       >
-        <TenantTable></TenantTable>
+        <TenantTable />
       </Card>
-      {addingTenantModalVisible && (
-        <AddingUserModal
-          visible
-          hideModal={hideAddingTenantModal}
-          onOk={handleAddUserOk}
-        ></AddingUserModal>
-      )}
+
+      <CreateTeamModal
+        visible={createModalVisible}
+        onClose={() => setCreateModalVisible(false)}
+        onSuccess={handleCreateSuccess}
+      />
     </div>
   );
 };

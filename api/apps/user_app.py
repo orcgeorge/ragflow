@@ -482,22 +482,51 @@ def rollback_user_registration(user_id):
 
 def user_register(user_id, user):
     user["id"] = user_id
-    tenant = {
-        "id": user_id,
-        "name": user["nickname"] + "‘s Kingdom",
-        "llm_id": settings.CHAT_MDL,
-        "embd_id": settings.EMBEDDING_MDL,
-        "asr_id": settings.ASR_MDL,
-        "parser_ids": settings.PARSERS,
-        "img2txt_id": settings.IMAGE2TEXT_MDL,
-        "rerank_id": settings.RERANK_MDL,
-    }
-    usr_tenant = {
-        "tenant_id": user_id,
+    # tenant = {
+    #     "id": user_id,
+    #     "name": user["nickname"] + "‘s Kingdom",
+    #     "llm_id": settings.CHAT_MDL,
+    #     "embd_id": settings.EMBEDDING_MDL,
+    #     "asr_id": settings.ASR_MDL,
+    #     "parser_ids": settings.PARSERS,
+    #     "img2txt_id": settings.IMAGE2TEXT_MDL,
+    #     "rerank_id": settings.RERANK_MDL,
+    # }
+    # usr_tenant = {
+    #     "tenant_id": user_id,
+    #     "user_id": user_id,
+    #     "invited_by": user_id,
+    #     "role": UserTenantRole.OWNER,
+    # }
+
+    # 1. 确保VC_ALL分组存在（使用固定ID）
+    vc_all_id = "757b8847f7fc11ef89702573f8e8e5dd"
+    if not TenantService.query(id=vc_all_id):
+        try:
+            tenant = {
+                "id": "757b8847f7fc11ef89702573f8e8e5dd",
+                "name": "VC_ALL",
+                "description": "Default group for all users",
+                "llm_id": settings.CHAT_MDL,
+                "embd_id": settings.EMBEDDING_MDL,
+                "asr_id": settings.ASR_MDL,
+                "parser_ids": settings.PARSERS,
+                "img2txt_id": settings.IMAGE2TEXT_MDL,
+                "rerank_id": settings.RERANK_MDL,
+            }
+            TenantService.insert(**tenant)
+            logging.info("VC_ALL tenant created successfully")
+        except Exception as e:
+            logging.error(f"Failed to create VC_ALL tenant: {str(e)}")
+
+    # 添加用户到 VC_ALL 分组（使用固定ID）
+    vc_all_tenant = {
+        "tenant_id": vc_all_id,
         "user_id": user_id,
-        "invited_by": user_id,
-        "role": UserTenantRole.OWNER,
+        "invited_by": "757b8847f7fc11ef89702573f8e8e5dd",
+        "role": UserTenantRole.NORMAL,
     }
+
     file_id = get_uuid()
     file = {
         "id": file_id,
@@ -525,8 +554,12 @@ def user_register(user_id, user):
 
     if not UserService.save(**user):
         return
-    TenantService.insert(**tenant)
-    UserTenantService.insert(**usr_tenant)
+
+    # UserTenantService.insert(**usr_tenant)
+    try:
+        UserTenantService.insert(**vc_all_tenant)  # 确保这行执行成功
+    except Exception as e:
+        logging.error(f"Failed to add user to VC_ALL: {str(e)}")
     TenantLLMService.insert_many(tenant_llm)
     FileService.insert(file)
     return UserService.query(email=user["email"])
@@ -648,9 +681,18 @@ def tenant_info():
               description: Embedding model ID.
     """
     try:
+        
         tenants = TenantService.get_info_by(current_user.id)
+        print("get_info_by:tenants-",tenants)
+        # if not tenants:
+        #     return get_data_error_result(message="Tenant no found!")
+        # 如果 tenant 为空，现在仅返回一个空数据或提示即可，跳过后续流程
         if not tenants:
-            return get_data_error_result(message="Tenant not found!")
+            # 这里可以视需求返回一个空对象，或者一个带有提示信息的 JSON
+            return get_json_result(
+                data={}, 
+                message="No tenant found, skip some logic instead of error."
+            )
         return get_json_result(data=tenants[0])
     except Exception as e:
         return server_error_response(e)

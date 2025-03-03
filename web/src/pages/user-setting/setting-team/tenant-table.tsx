@@ -1,15 +1,18 @@
-import { useFetchUserInfo, useListTenant } from '@/hooks/user-setting-hooks';
+import { useFetchUserInfo, useListTenant2 } from '@/hooks/user-setting-hooks';
 import { ITenant } from '@/interfaces/database/user-setting';
-import { formatDate } from '@/utils/date';
 import type { TableProps } from 'antd';
-import { Button, Space, Table } from 'antd';
+import { Button, Space, Table, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { TenantRole } from '../constants';
 import { useHandleAgreeTenant, useHandleQuitUser } from './hooks';
 
-const TenantTable = () => {
+interface TenantTableProps {
+  onTeamSelect?: (teamId: string) => void;
+}
+
+const TenantTable = ({ onTeamSelect }: TenantTableProps) => {
   const { t } = useTranslation();
-  const { data, loading } = useListTenant();
+  const { data, loading } = useListTenant2();
   const { handleAgree } = useHandleAgreeTenant();
   const { data: user } = useFetchUserInfo();
   const { handleQuitTenantUser } = useHandleQuitUser();
@@ -17,21 +20,24 @@ const TenantTable = () => {
   const columns: TableProps<ITenant>['columns'] = [
     {
       title: t('common.name'),
-      dataIndex: 'nickname',
-      key: 'nickname',
+      dataIndex: 'name',
+      key: 'name',
     },
     {
-      title: t('setting.email'),
-      dataIndex: 'email',
-      key: 'email',
+      title: t('setting.role'),
+      dataIndex: 'role',
+      key: 'role',
+      render: (role) => (
+        <Tag color={role === TenantRole.Owner ? 'gold' : 'green'}>
+          {role === TenantRole.Owner ? t('setting.owner') : t('setting.member')}
+        </Tag>
+      ),
     },
     {
-      title: t('setting.updateDate'),
-      dataIndex: 'update_date',
-      key: 'update_date',
-      render(value) {
-        return formatDate(value);
-      },
+      title: t('setting.owner'),
+      dataIndex: 'owner_name',
+      key: 'owner_name',
+      render: (value, record) => `${value} (${record.owner_email})`,
     },
     {
       title: t('common.action'),
@@ -58,6 +64,7 @@ const TenantTable = () => {
             </Button>
           );
         }
+        return null;
       },
     },
   ];
@@ -69,6 +76,9 @@ const TenantTable = () => {
       rowKey={'tenant_id'}
       loading={loading}
       pagination={false}
+      onRow={(record) => ({
+        onClick: () => onTeamSelect?.(record.tenant_id),
+      })}
     />
   );
 };

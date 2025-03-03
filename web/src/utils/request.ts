@@ -80,6 +80,8 @@ const request: RequestMethod = extend({
 request.interceptors.request.use((url: string, options: any) => {
   const data = convertTheKeysOfTheObjectToSnake(options.data);
   const params = convertTheKeysOfTheObjectToSnake(options.params);
+  console.log('Request URL:', url);
+  console.log('Request Options:', options);
 
   return {
     url,
@@ -99,6 +101,7 @@ request.interceptors.request.use((url: string, options: any) => {
 });
 
 request.interceptors.response.use(async (response: Response, options) => {
+  console.log('Response:', response);
   if (response?.status === 413 || response?.status === 504) {
     message.error(RetcodeMessage[response?.status as ResultCode]);
   }
@@ -108,6 +111,8 @@ request.interceptors.response.use(async (response: Response, options) => {
   }
 
   const data: ResponseType = await response?.clone()?.json();
+  console.log('Response data:', data);
+
   if (data?.code === 100) {
     message.error(data?.message);
   } else if (data?.code === 401) {
@@ -117,7 +122,7 @@ request.interceptors.response.use(async (response: Response, options) => {
       duration: 3,
     });
     authorizationUtil.removeAll();
-    history.push('/login'); // Will not jump to the login page
+    history.push('/login');
   } else if (data?.code !== 0) {
     notification.error({
       message: `${i18n.t('message.hint')} : ${data?.code}`,

@@ -133,11 +133,13 @@ def stats():
         return get_json_result(data=res)
     except Exception as e:
         return server_error_response(e)
+import logging
 
+logging.basicConfig(level=logging.INFO)
 
 @manager.route('/new_conversation', methods=['GET'])  # noqa: F821
 def set_conversation():
-    print("api_apps!!!!!")
+
     token = request.headers.get('Authorization').split()[1]
     objs = APIToken.query(token=token)
     if not objs:

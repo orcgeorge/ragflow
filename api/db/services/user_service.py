@@ -117,7 +117,22 @@ class TenantService(CommonService):
         return list(cls.model.select(*fields)
                     .join(UserTenant, on=((cls.model.id == UserTenant.tenant_id) & (UserTenant.user_id == user_id) & (UserTenant.status == StatusEnum.VALID.value) & (UserTenant.role == UserTenantRole.NORMAL)))
                     .where(cls.model.status == StatusEnum.VALID.value).dicts())
-
+    
+    @classmethod
+    @DB.connection_context()
+    def get_info_all(cls, user_id):
+        fields = [
+            cls.model.id.alias("tenant_id"),
+            cls.model.name,
+            cls.model.llm_id,
+            cls.model.embd_id,
+            cls.model.asr_id,
+            cls.model.img2txt_id,
+            UserTenant.role]
+        return list(cls.model.select(*fields)
+                    .join(UserTenant, on=((cls.model.id == UserTenant.tenant_id) & (UserTenant.user_id == user_id) & (UserTenant.status == StatusEnum.VALID.value) ))
+                    .where(cls.model.status == StatusEnum.VALID.value).dicts())
+    
     @classmethod
     @DB.connection_context()
     def decrease(cls, user_id, num):

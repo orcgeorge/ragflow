@@ -56,6 +56,9 @@ const Chat = () => {
   const { handleClickConversation } = useClickConversationCard();
   const { dialogId, conversationId } = useGetChatSearchParams();
   const { theme } = useTheme();
+  // 从 localStorage 获取用户信息
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+  const isSuperuser = userInfo.is_superuser;
   const {
     list: conversationList,
     addTemporaryConversation,
@@ -235,9 +238,13 @@ const Chat = () => {
     <Flex className={styles.chatWrapper}>
       <Flex className={styles.chatAppWrapper}>
         <Flex flex={1} vertical>
-          <Button type="primary" onClick={handleShowChatConfigurationModal()}>
-            {t('createAssistant')}
-          </Button>
+          {isSuperuser ? (
+            <Button type="primary" onClick={handleShowChatConfigurationModal()}>
+              {t('createAssistant')}
+            </Button>
+          ) : (
+            <div className={styles.knowledgeBaseText}>{'知识库'}</div>
+          )}
           <Divider></Divider>
           <Flex className={styles.chatAppContent} vertical gap={10}>
             <Spin spinning={dialogLoading} wrapperClassName={styles.chatSpin}>

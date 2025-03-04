@@ -37,7 +37,9 @@ from timeit import default_timer as timer
 
 from rag.utils.redis_conn import REDIS_CONN
 
+import logging
 
+logging.basicConfig(level=logging.INFO)
 @manager.route("/version", methods=["GET"])  # noqa: F821
 @login_required
 def version():
@@ -251,6 +253,7 @@ def token_list():
                     type: string
                     description: Token creation time.
     """
+    logging.info("token_list")
     try:
         tenants = UserTenantService.query(user_id=current_user.id)
         if not tenants:

@@ -238,9 +238,41 @@ export const useRemoveNextDialog = () => {
 
 //#region conversation
 
+// export const useFetchNextConversationList = () => {
+//   const { dialogId } = useGetChatSearchParams();
+//   const { handleClickConversation } = useClickConversationCard();
+//   const {
+//     data,
+//     isFetching: loading,
+//     refetch,
+//   } = useQuery<IConversation[]>({
+//     queryKey: ['fetchConversationList', dialogId],
+//     initialData: [],
+//     gcTime: 0,
+//     refetchOnWindowFocus: false,
+//     enabled: !!dialogId,
+//     queryFn: async () => {
+//       const { data } = await chatService.listConversation({ dialogId });
+//       if (data.code === 0) {
+//         if (data.data.length > 0) {
+//           handleClickConversation(data.data[0].id, '');
+//         } else {
+//           handleClickConversation('', '');
+//         }
+//       }
+//       return data?.data;
+//     },
+//   });
+
+//   return { data, loading, refetch };
+// };
+
 export const useFetchNextConversationList = () => {
   const { dialogId } = useGetChatSearchParams();
   const { handleClickConversation } = useClickConversationCard();
+
+  console.log('🚀 useFetchNextConversationList - dialogId:', dialogId);
+
   const {
     data,
     isFetching: loading,
@@ -252,17 +284,39 @@ export const useFetchNextConversationList = () => {
     refetchOnWindowFocus: false,
     enabled: !!dialogId,
     queryFn: async () => {
-      const { data } = await chatService.listConversation({ dialogId });
-      if (data.code === 0) {
-        if (data.data.length > 0) {
-          handleClickConversation(data.data[0].id, '');
+      console.log('📢 Fetching conversation list for dialogId:', dialogId);
+
+      try {
+        const { data } = await chatService.listConversation({ dialogId });
+
+        console.log('✅ API Response:', data);
+
+        if (data.code === 0) {
+          if (Array.isArray(data.data) && data.data.length > 0) {
+            console.log(
+              '✅ Conversations found, first conversation ID:',
+              data.data[0].id,
+            );
+            handleClickConversation(data.data[0].id, '');
+          } else {
+            console.warn(
+              '⚠️ No conversations found, setting empty conversation.',
+            );
+            handleClickConversation('', '');
+          }
         } else {
-          handleClickConversation('', '');
+          console.error('❌ API response error, code:', data.code);
         }
+
+        return data?.data ?? []; // 确保返回一个数组，避免 undefined 报错
+      } catch (error) {
+        console.error('❌ Fetching conversation list failed:', error);
+        return []; // 确保发生错误时返回空数组
       }
-      return data?.data;
     },
   });
+
+  console.log('🎯 Hook returned data:', data);
 
   return { data, loading, refetch };
 };

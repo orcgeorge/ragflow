@@ -26,7 +26,10 @@ from api.db.db_models import TenantLLM
 from api.utils.api_utils import get_json_result
 from api.utils.file_utils import get_project_base_directory
 from rag.llm import EmbeddingModel, ChatModel, RerankModel, CvModel, TTSModel
+from api.db.services.user_service import TenantService, UserTenantService
+import logging
 
+logging.basicConfig(level=logging.INFO)
 
 @manager.route('/factories', methods=['GET'])  # noqa: F821
 @login_required
@@ -108,16 +111,16 @@ def set_api_key():
     for n in ["model_type", "llm_name"]:
         if n in req:
             llm_config[n] = req[n]
-
+    tenant_id = UserTenantService.get_tenants_by_user_id(current_user.id)[0]['tenant_id']
     for llm in LLMService.query(fid=factory):
         llm_config["max_tokens"]=llm.max_tokens
         if not TenantLLMService.filter_update(
-                [TenantLLM.tenant_id == current_user.id,
+                [TenantLLM.tenant_id == tenant_id,
                  TenantLLM.llm_factory == factory,
                  TenantLLM.llm_name == llm.llm_name],
                 llm_config):
             TenantLLMService.save(
-                tenant_id=current_user.id,
+                tenant_id=tenant_id,
                 llm_factory=factory,
                 llm_name=llm.llm_name,
                 model_type=llm.model_type,
@@ -197,9 +200,9 @@ def add_llm():
     else:
         llm_name = req["llm_name"]
         api_key = req.get("api_key", "xxxxxxxxxxxxxxx")
-
+    tenant_id = UserTenantService.get_tenants_by_user_id(current_user.id)[0]['tenant_id']
     llm = {
-        "tenant_id": current_user.id,
+        "tenant_id": tenant_id,
         "llm_factory": factory,
         "model_type": req["model_type"],
         "llm_name": llm_name,
@@ -278,9 +281,9 @@ def add_llm():
 
     if msg:
         return get_data_error_result(message=msg)
-
+    tenant_id = UserTenantService.get_tenants_by_user_id(current_user.id)[0]['tenant_id']
     if not TenantLLMService.filter_update(
-            [TenantLLM.tenant_id == current_user.id, TenantLLM.llm_factory == factory,
+            [TenantLLM.tenant_id == tenant_id, TenantLLM.llm_factory == factory,
              TenantLLM.llm_name == llm["llm_name"]], llm):
         TenantLLMService.save(**llm)
 
@@ -292,8 +295,9 @@ def add_llm():
 @validate_request("llm_factory", "llm_name")
 def delete_llm():
     req = request.json
+    tenant_id = UserTenantService.get_tenants_by_user_id(current_user.id)[0]['tenant_id']
     TenantLLMService.filter_delete(
-        [TenantLLM.tenant_id == current_user.id, TenantLLM.llm_factory == req["llm_factory"],
+        [TenantLLM.tenant_id == tenant_id, TenantLLM.llm_factory == req["llm_factory"],
          TenantLLM.llm_name == req["llm_name"]])
     return get_json_result(data=True)
 
@@ -303,17 +307,23 @@ def delete_llm():
 @validate_request("llm_factory")
 def delete_factory():
     req = request.json
+    tenant_id = UserTenantService.get_tenants_by_user_id(current_user.id)[0]['tenant_id']
     TenantLLMService.filter_delete(
-        [TenantLLM.tenant_id == current_user.id, TenantLLM.llm_factory == req["llm_factory"]])
+        [TenantLLM.tenant_id == tenant_id, TenantLLM.llm_factory == req["llm_factory"]])
     return get_json_result(data=True)
 
 
 @manager.route('/my_llms', methods=['GET'])  # noqa: F821
 @login_required
 def my_llms():
+    logging.info("my_llms")
+    logging.info("my_llms")
+    logging.info("my_llms")
+    logging.info("my_llms")
     try:
+        tenant_id = UserTenantService.get_tenants_by_user_id(current_user.id)[0]['tenant_id']
         res = {}
-        for o in TenantLLMService.get_my_llms(current_user.id):
+        for o in TenantLLMService.get_my_llms(tenant_id):
             if o["llm_factory"] not in res:
                 res[o["llm_factory"]] = {
                     "tags": o["tags"],
@@ -336,7 +346,8 @@ def list_app():
     weighted = ["Youdao", "FastEmbed", "BAAI"] if settings.LIGHTEN != 0 else []
     model_type = request.args.get("model_type")
     try:
-        objs = TenantLLMService.query(tenant_id=current_user.id)
+        tenant_id = UserTenantService.get_tenants_by_user_id(current_user.id)[0]['tenant_id']
+        objs = TenantLLMService.query(tenant_id=tenant_id)
         facts = set([o.to_dict()["llm_factory"] for o in objs if o.api_key])
         llms = LLMService.get_all()
         llms = [m.to_dict()

@@ -32,16 +32,21 @@ from api import settings
 from api.utils.api_utils import get_json_result
 from api.utils.api_utils import server_error_response, get_data_error_result, validate_request
 from graphrag.general.mind_map_extractor import MindMapExtractor
+import logging
 
+logging.basicConfig(level=logging.INFO)
 
 @manager.route('/set', methods=['POST'])  # noqa: F821
 @login_required
 def set_conversation():
-    print("conversation_app!!!!!")
+    logging.info("!!!conversation app set!!!!")
+
     req = request.json
+    logging.info("req: %s",req)
     conv_id = req.get("conversation_id")
     is_new = req.get("is_new")
     del req["is_new"]
+    logging.info("is_new: %s",is_new)
     if not is_new:
         del req["conversation_id"]
         try:
@@ -57,15 +62,19 @@ def set_conversation():
             return server_error_response(e)
 
     try:
+
         e, dia = DialogService.get_by_id(req["dialog_id"])
+        logging.info("dia: %s",dia)
         if not e:
             return get_data_error_result(message="Dialog not found")
         conv = {
             "id": conv_id,
             "dialog_id": req["dialog_id"],
             "name": req.get("name", "New conversation"),
-            "message": [{"role": "assistant", "content": dia.prompt_config["prologue"]}]
+            "message": [{"role": "assistant", "content": dia.prompt_config["prologue"]}],
+            "user_id": current_user.id
         }
+        logging.info("conv: %s",conv)
         ConversationService.save(**conv)
         return get_json_result(data=conv)
     except Exception as e:
@@ -75,6 +84,7 @@ def set_conversation():
 @manager.route('/get', methods=['GET'])  # noqa: F821
 @login_required
 def get():
+    logging.info("!!!conversation app get!!!!")
     conv_id = request.args["conversation_id"]
     try:
         
@@ -162,18 +172,20 @@ def rm():
 @manager.route('/list', methods=['GET'])  # noqa: F821
 @login_required
 def list_convsersation():
+    logging.info("!!!conversation app list!!!!")
     dialog_id = request.args["dialog_id"]
     try:
-        if not DialogService.query(tenant_id=current_user.id, id=dialog_id):
-            return get_json_result(
-                data=False, message='Only owner of dialog authorized for this operation.',
-                code=settings.RetCode.OPERATING_ERROR)
+        # if not DialogService.query(tenant_id=current_user.id, id=dialog_id):
+        #     return get_json_result(
+        #         data=False, message='Only owner of dialog authorized for this operation.',
+        #         code=settings.RetCode.OPERATING_ERROR)
         convs = ConversationService.query(
             dialog_id=dialog_id,
             order_by=ConversationService.model.create_time,
             reverse=True)
-
-        convs = [d.to_dict() for d in convs]
+        
+        convs = [d.to_dict() for d in convs if d.user_id == current_user.id]
+        # logging.info("convs: %s",convs)
         return get_json_result(data=convs)
     except Exception as e:
         return server_error_response(e)
@@ -183,6 +195,7 @@ def list_convsersation():
 @login_required
 @validate_request("conversation_id", "messages")
 def completion():
+    logging.debug("!!!completion!!!!")
     req = request.json
     msg = []
     for m in req["messages"]:
@@ -346,6 +359,7 @@ def thumbup():
 @login_required
 @validate_request("question", "kb_ids")
 def ask_about():
+    logging.debug("!!!ask_about!!!!")
     req = request.json
     uid = current_user.id
 

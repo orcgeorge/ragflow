@@ -25,12 +25,15 @@ from api import settings
 from api.utils.api_utils import server_error_response, get_data_error_result, validate_request
 from api.utils import get_uuid
 from api.utils.api_utils import get_json_result
+import logging
 
+logging.basicConfig(level=logging.INFO)
 
 @manager.route('/set', methods=['POST'])  # noqa: F821
 @login_required
 def set_dialog():
     req = request.json
+    logging.info("req:%s",req)
     dialog_id = req.get("dialog_id")
     name = req.get("name", "New Dialog")
     description = req.get("description", "A helpful dialog")
@@ -51,13 +54,45 @@ def set_dialog():
         "prologue": "您好，我是您的助手小樱，长得可爱又善良，can I help you?",
         "parameters": [
             {"key": "knowledge", "optional": False}
+
         ],
+        'quote': True, 'keyword': False, 'tts': False,
+        'llm_id':'deepseek-r1:32b@Ollama',
+        'llm_setting':{'temperature': 0.1, 'top_p': 0.3, 'presence_penalty': 0.4, 'frequency_penalty': 0.7, 'max_tokens': 512},
+        'similarity_threshold': 0.2, 
+        'vector_similarity_weight': 0.30000000000000004, 
+        'top_n': 8,
         "empty_response": "Sorry! 知识库中未找到相关内容！"
     }
     prompt_config = req.get("prompt_config", default_prompt)
+    logging.info("prompt_config: %s",prompt_config)
+    if "parameters" not in prompt_config or not prompt_config["parameters"]:
+        prompt_config["parameters"] = default_prompt["parameters"]
 
-    if not prompt_config["system"]:
+    if "prologue" not in prompt_config or not prompt_config["prologue"]:
+        prompt_config["prologue"] = default_prompt["prologue"]
+
+    if "quote" not in prompt_config or not prompt_config["quote"]:
+        prompt_config["quote"] = default_prompt["quote"]
+    if "keyword" not in prompt_config or not prompt_config["keyword"]:
+        prompt_config["keyword"] = default_prompt["keyword"]
+    if "tts" not in prompt_config or not prompt_config["tts"]:
+        prompt_config["tts"] = default_prompt["tts"]
+
+    if "system" not in prompt_config or not prompt_config["system"]:
         prompt_config["system"] = default_prompt["system"]
+
+    if 'vector_similarity_weight' not in prompt_config or not prompt_config["vector_similarity_weight"]:
+        prompt_config["vector_similarity_weight"] = default_prompt["vector_similarity_weight"]
+
+    if 'llm_setting' not in prompt_config or not prompt_config["llm_setting"]:
+        prompt_config["llm_setting"] = default_prompt["llm_setting"]
+
+    if 'similarity_threshold' not in prompt_config or not prompt_config["similarity_threshold"]:
+        prompt_config["similarity_threshold"] = default_prompt["similarity_threshold"]
+
+    if 'top_n' not in prompt_config or not prompt_config["top_n"]:
+        prompt_config["top_n"] = default_prompt["top_n"]
 
     for p in prompt_config["parameters"]:
         if p["optional"]:
@@ -65,9 +100,15 @@ def set_dialog():
         if prompt_config["system"].find("{%s}" % p["key"]) < 0:
             return get_data_error_result(
                 message="Parameter '{}' is not used".format(p["key"]))
-
+    logging.info("prompt_config: %s",prompt_config)
+    logging.info("prompt_config")
     try:
+        tenant_id = UserTenantService.get_tenants_by_user_id(current_user.id)[0]['tenant_id']
+        # logging.info("current_user.id:%s",current_user.id)
+        # logging.info("tenant.id:%s",tenant_id)
+
         e, tenant = TenantService.get_by_id(current_user.id)
+        e, tenant = TenantService.get_by_id(tenant_id)
         if not e:
             return get_data_error_result(message="Tenant not found!")
         kbs = KnowledgebaseService.get_by_ids(req.get("kb_ids", []))
@@ -78,9 +119,10 @@ def set_dialog():
 
         llm_id = req.get("llm_id", tenant.llm_id)
         if not dialog_id:
+
             dia = {
                 "id": get_uuid(),
-                "tenant_id": current_user.id,
+                "tenant_id": tenant_id, # current_user.id,
                 "name": name,
                 "kb_ids": req.get("kb_ids", []),
                 "description": description,
@@ -118,12 +160,16 @@ def set_dialog():
 @login_required
 def get():
     dialog_id = request.args["dialog_id"]
+    # logging.info("!!!dialog_id!!!!:%s", dialog_id)
     try:
         e, dia = DialogService.get_by_id(dialog_id)
+        
         if not e:
             return get_data_error_result(message="Dialog not found!")
         dia = dia.to_dict()
+        
         dia["kb_ids"], dia["kb_names"] = get_kb_names(dia["kb_ids"])
+        # logging.info("!!! return dia!!!!:%s", dia)
         return get_json_result(data=dia)
     except Exception as e:
         return server_error_response(e)
@@ -143,13 +189,18 @@ def get_kb_names(kb_ids):
 @manager.route('/list', methods=['GET'])  # noqa: F821
 @login_required
 def list_dialogs():
+    # logging.info("!!!list_dialog!!!!:%s", current_user.id)
+    tenant_id = UserTenantService.get_tenants_by_user_id(current_user.id)[0]['tenant_id']
+    # logging.info("tenant.id:%s",tenant_id)
     try:
         diags = DialogService.query(
-            tenant_id=current_user.id,
+            tenant_id=tenant_id, #current_user.id,
             status=StatusEnum.VALID.value,
             reverse=True,
             order_by=DialogService.model.create_time)
         diags = [d.to_dict() for d in diags]
+        # logging.info("!!!diags!!!!:%s",len(diags))
+        # logging.info("!!!diags!!!!:%s",diags)
         for d in diags:
             d["kb_ids"], d["kb_names"] = get_kb_names(d["kb_ids"])
         return get_json_result(data=diags)
@@ -161,6 +212,7 @@ def list_dialogs():
 @login_required
 @validate_request("dialog_ids")
 def rm():
+    # logging.info("!!!conversation rm!!!!")
     req = request.json
     dialog_list=[]
     tenants = UserTenantService.query(user_id=current_user.id)

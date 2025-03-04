@@ -42,7 +42,9 @@ from api import settings
 from api.db.services.user_service import UserService, TenantService, UserTenantService
 from api.db.services.file_service import FileService
 from api.utils.api_utils import get_json_result, construct_response
+import logging
 
+logging.basicConfig(level=logging.INFO)
 
 @manager.route("/login", methods=["POST", "GET"])  # noqa: F821
 def login():
@@ -681,11 +683,13 @@ def tenant_info():
               description: Embedding model ID.
     """
     try:
-        
-        tenants = TenantService.get_info_by(current_user.id)
+        logging.info("tenant_info")
+        # tenants = TenantService.get_info_by(current_user.id)
+        tenants = TenantService.get_info_all(current_user.id)
         print("get_info_by:tenants-",tenants)
-        # if not tenants:
-        #     return get_data_error_result(message="Tenant no found!")
+        if not tenants:
+            logging.info("tenant_info not found")
+            # return get_data_error_result(message="Tenant no found!")
         # 如果 tenant 为空，现在仅返回一个空数据或提示即可，跳过后续流程
         if not tenants:
             # 这里可以视需求返回一个空对象，或者一个带有提示信息的 JSON

@@ -326,13 +326,39 @@ docker build -f Dockerfile -t infiniflow/ragflow:nightly .
    export PYTHONPATH=$(pwd)
    bash docker/launch_backend_service.sh
    ```
+   if not found python package
+   ```bash
+   uv sync --python 3.10 --all-extras --active
+   ```
+   if punkt_tab not found go to python
+   ```bash
+   import nltk
+   nltk.download('punkt_tab')
+   ```
+   if can't download see:
+   https://blog.csdn.net/2301_81199775/article/details/139939837
 
-6. Install frontend dependencies:
+   if ImportError: libodbc.so.2: cannot open shared object file: No such file or directory
+   ```bash
+   sudo apt update
+   sudo apt install unixodbc unixodbc-dev
+   ```
+
+
+7. Install frontend dependencies:
    ```bash
    cd web
    npm install
    ```
-7. Launch frontend service:
+   if something wrong with npm version
+   ```bash
+   wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+   source ~/.bashrc
+   nvm install 18.20.4
+   ```
+
+   
+9. Launch frontend service:
 
    ```bash
    npm run dev

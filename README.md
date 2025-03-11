@@ -326,6 +326,10 @@ docker build -f Dockerfile -t infiniflow/ragflow:nightly .
    export PYTHONPATH=$(pwd)
    bash docker/launch_backend_service.sh
    ```
+   ```bash
+   or use：
+   nohup bash docker/launch_backend_service.sh &> launch_backend_service.log &
+   ```
    if not found python package
    ```bash
    uv sync --python 3.10 --all-extras --active
@@ -362,6 +366,10 @@ docker build -f Dockerfile -t infiniflow/ragflow:nightly .
 
    ```bash
    npm run dev
+   ```
+   or use：
+   ```bash
+   nohup npm run dev &> dev.log &
    ```
 
    _The following output confirms a successful launch of the system:_

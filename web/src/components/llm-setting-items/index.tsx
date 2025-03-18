@@ -283,6 +283,7 @@ const LlmSettingItems = ({ prefix, formItemLayout = {} }: IProps) => {
                 name={'maxTokensEnabled'}
                 valuePropName="checked"
                 noStyle
+                initialValue={false}
               >
                 <Switch size="small" />
               </Form.Item>

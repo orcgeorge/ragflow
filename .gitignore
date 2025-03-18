@@ -42,3 +42,5 @@ index.html
 9b5ad71b2ce5302211f9c61530b329a4922fc6a4
 logfile.log
 docker/launch_backend_service_log.sh
+web/dev.log
+launch_backend_service.log

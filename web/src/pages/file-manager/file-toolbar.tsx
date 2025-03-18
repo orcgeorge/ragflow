@@ -5,9 +5,6 @@ import {
 } from '@/hooks/file-manager-hooks';
 import {
   DownOutlined,
-  FileTextOutlined,
-  FolderOpenOutlined,
-  PlusOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
 import {
@@ -73,40 +70,6 @@ const FileToolbar = ({
       </span>
     );
   };
-
-  const actionItems: MenuProps['items'] = useMemo(() => {
-    return [
-      {
-        key: '1',
-        onClick: showFileUploadModal,
-        label: (
-          <div>
-            <Button type="link">
-              <Space>
-                <FileTextOutlined />
-                {t('uploadFile', { keyPrefix: 'fileManager' })}
-              </Space>
-            </Button>
-          </div>
-        ),
-      },
-      { type: 'divider' },
-      {
-        key: '2',
-        onClick: showFolderCreateModal,
-        label: (
-          <div>
-            <Button type="link">
-              <Space>
-                <FolderOpenOutlined />
-                {t('newFolder', { keyPrefix: 'fileManager' })}
-              </Space>
-            </Button>
-          </div>
-        ),
-      },
-    ];
-  }, [t, showFolderCreateModal, showFileUploadModal]);
 
   const { handleRemoveFile } = useHandleDeleteFile(
     selectedRowKeys,
@@ -175,14 +138,6 @@ const FileToolbar = ({
           onChange={handleInputChange}
           prefix={<SearchOutlined />}
         />
-
-        {isKnowledgeBase || (
-          <Dropdown menu={{ items: actionItems }} trigger={['click']}>
-            <Button type="primary" icon={<PlusOutlined />}>
-              {t('addFile')}
-            </Button>
-          </Dropdown>
-        )}
       </Space>
     </div>
   );

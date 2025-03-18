@@ -24,6 +24,7 @@ from api.db.db_models import DB, UserTenant, User, Tenant
 from api.db.services.common_service import CommonService
 from api.utils import get_uuid, current_timestamp, datetime_format
 from rag.settings import MINIO
+from api.constants import TENANT_ID_VC
 
 
 class UserService(CommonService):
@@ -84,6 +85,21 @@ class UserService(CommonService):
 
 class TenantService(CommonService):
     model = Tenant
+    
+    @classmethod
+    @DB.connection_context()
+    def get_owner_tenants_by_user_id(cls, user_id):
+        fields = [
+            cls.model.id.alias("tenant_id"),
+            cls.model.name,
+            cls.model.llm_id,
+            cls.model.embd_id,
+            cls.model.asr_id,
+            cls.model.img2txt_id,
+            UserTenant.role]
+        return list(cls.model.select(*fields)
+                    .join(UserTenant, on=((cls.model.id == UserTenant.tenant_id) & (UserTenant.user_id == user_id) & (UserTenant.status == StatusEnum.VALID.value) & (UserTenant.role == UserTenantRole.OWNER)))
+                    .where(cls.model.status == StatusEnum.VALID.value).dicts())
 
     @classmethod
     @DB.connection_context()
@@ -115,7 +131,7 @@ class TenantService(CommonService):
             cls.model.img2txt_id,
             UserTenant.role]
         return list(cls.model.select(*fields)
-                    .join(UserTenant, on=((cls.model.id == UserTenant.tenant_id) & (UserTenant.user_id == user_id) & (UserTenant.status == StatusEnum.VALID.value) & (UserTenant.role == UserTenantRole.NORMAL)))
+                    .join(UserTenant, on=((cls.model.id == UserTenant.tenant_id) & (UserTenant.user_id == user_id) & (UserTenant.status == StatusEnum.VALID.value) & ((UserTenant.role == UserTenantRole.NORMAL) | (UserTenant.role == UserTenantRole.OWNER))))
                     .where(cls.model.status == StatusEnum.VALID.value).dicts())
     
     @classmethod
@@ -131,7 +147,7 @@ class TenantService(CommonService):
             UserTenant.role]
         return list(cls.model.select(*fields)
                     .join(UserTenant, on=((cls.model.id == UserTenant.tenant_id) & (UserTenant.user_id == user_id) & (UserTenant.status == StatusEnum.VALID.value) ))
-                    .where(cls.model.status == StatusEnum.VALID.value).dicts())
+                    .where((cls.model.status == StatusEnum.VALID.value) & (cls.model.id == TENANT_ID_VC)).dicts())
     
     @classmethod
     @DB.connection_context()
@@ -194,46 +210,25 @@ class UserTenantService(CommonService):
     @DB.connection_context()
     def get_tenants_by_user_id(cls, user_id):
         import logging
-        fields = [
-            Tenant.id.alias("tenant_id"),
-            Tenant.name,
-            cls.model.role,
-            Tenant.llm_id,
-            Tenant.embd_id,
-            Tenant.asr_id,
-            Tenant.img2txt_id,
-            User.nickname.alias("owner_name"),
-            User.email.alias("owner_email"),
-            Tenant.create_date,
-            Tenant.update_date
-        ]
+        logging.info(f"UserTenantService.get_tenants_by_user_id 被调用，用户ID: {user_id}")
+        logging.info(f"返回固定租户 ID: {TENANT_ID_VC}")
         
-        # 先找到每个团队的所有者信息
-        owner_subquery = cls.model.select(
-            cls.model.tenant_id,
-            cls.model.user_id.alias('owner_id')
-        ).where(cls.model.role == UserTenantRole.OWNER.value)
+        # 创建一个包含固定租户ID的结果
+        result = [{
+            "tenant_id": TENANT_ID_VC,
+            "name": "VC Team",
+            "role": "owner",
+            "llm_id": "",
+            "embd_id": "",
+            "asr_id": "",
+            "img2txt_id": "",
+            "owner_name": "System",
+            "owner_email": "system@infiniflow.ai",
+            "create_date": None,
+            "update_date": None
+        }]
         
-        query = cls.model.select(*fields)\
-            .join(Tenant, on=(cls.model.tenant_id == Tenant.id))\
-            .join(owner_subquery, on=(Tenant.id == owner_subquery.c.tenant_id))\
-            .join(User, on=(User.id == owner_subquery.c.owner_id))\
-            .where(
-                (cls.model.user_id == user_id) &
-                (cls.model.status == StatusEnum.VALID.value) &
-                (Tenant.status == StatusEnum.VALID.value)
-            )
-        
-        logging.info(f"SQL Query: {query.sql()}")
-        result = list(query.dicts())
-        logging.info(f"Query result: {result}")
-        
-        # 特殊处理 VC_ALL 团队的所有者信息
-        for team in result:
-            if team["tenant_id"] == "VC_ALL":
-                team["owner_name"] = "System"
-                team["owner_email"] = "system@infiniflow.ai"
-        
+        logging.info(f"查询到用户 {user_id} 的租户数量: {len(result)}")
         return result
 
     @classmethod

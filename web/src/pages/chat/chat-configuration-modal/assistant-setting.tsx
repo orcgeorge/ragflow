@@ -80,97 +80,93 @@ const AssistantSetting = ({
         onChange={handleChange}
       ></KnowledgeBaseItem>
 
-      {isSuperuser && (
-        <>
-          <Form.Item name={'description'} label={t('description')}>
-            <Input placeholder={t('descriptionPlaceholder')} />
-          </Form.Item>
+      <Form.Item name={'description'} label={t('description')}>
+        <Input placeholder={t('descriptionPlaceholder')} />
+      </Form.Item>
 
-          <Form.Item
-            name="icon"
-            label={t('assistantAvatar')}
-            valuePropName="fileList"
-            getValueFromEvent={normFile}
-          >
-            <Upload
-              listType="picture-card"
-              maxCount={1}
-              beforeUpload={() => false}
-              showUploadList={{ showPreviewIcon: false, showRemoveIcon: false }}
-            >
-              {show ? uploadButton : null}
-            </Upload>
-          </Form.Item>
+      <Form.Item
+        name="icon"
+        label={t('assistantAvatar')}
+        valuePropName="fileList"
+        getValueFromEvent={normFile}
+      >
+        <Upload
+          listType="picture-card"
+          maxCount={1}
+          beforeUpload={() => false}
+          showUploadList={{ showPreviewIcon: false, showRemoveIcon: false }}
+        >
+          {show ? uploadButton : null}
+        </Upload>
+      </Form.Item>
 
-          <Form.Item
-            name={'language'}
-            label={t('language')}
-            initialValue={'English'}
-            tooltip="coming soon"
-            style={{ display: 'none' }}
-          >
-            <Select
-              options={[
-                {
-                  value: 'Chinese',
-                  label: t('chinese', { keyPrefix: 'common' }),
-                },
-                {
-                  value: 'English',
-                  label: t('english', { keyPrefix: 'common' }),
-                },
-              ]}
-            />
-          </Form.Item>
+      <Form.Item
+        name={'language'}
+        label={t('language')}
+        initialValue={'English'}
+        tooltip="coming soon"
+        style={{ display: 'none' }}
+      >
+        <Select
+          options={[
+            {
+              value: 'Chinese',
+              label: t('chinese', { keyPrefix: 'common' }),
+            },
+            {
+              value: 'English',
+              label: t('english', { keyPrefix: 'common' }),
+            },
+          ]}
+        />
+      </Form.Item>
 
-          <Form.Item
-            name={emptyResponseField}
-            label={t('emptyResponse')}
-            tooltip={t('emptyResponseTip')}
-          >
-            <Input placeholder="" onChange={handleChange} />
-          </Form.Item>
+      <Form.Item
+        name={emptyResponseField}
+        label={t('emptyResponse')}
+        tooltip={t('emptyResponseTip')}
+      >
+        <Input placeholder="" onChange={handleChange} />
+      </Form.Item>
 
-          <Form.Item
-            name={['prompt_config', 'prologue']}
-            label={t('setAnOpener')}
-            tooltip={t('setAnOpenerTip')}
-            initialValue={t('setAnOpenerInitial')}
-          >
-            <Input.TextArea autoSize={{ minRows: 5 }} />
-          </Form.Item>
+      <Form.Item
+        name={['prompt_config', 'prologue']}
+        label={t('setAnOpener')}
+        tooltip={t('setAnOpenerTip')}
+        initialValue={t('setAnOpenerInitial')}
+      >
+        <Input.TextArea autoSize={{ minRows: 5 }} />
+      </Form.Item>
 
-          <Form.Item
-            label={t('quote')}
-            valuePropName="checked"
-            name={['prompt_config', 'quote']}
-            tooltip={t('quoteTip')}
-            initialValue={true}
-          >
-            <Switch />
-          </Form.Item>
+      <Form.Item
+        label={t('quote')}
+        valuePropName="checked"
+        name={['prompt_config', 'quote']}
+        tooltip={t('quoteTip')}
+        initialValue={true}
+      >
+        <Switch />
+      </Form.Item>
 
-          <Form.Item
-            label={t('keyword')}
-            valuePropName="checked"
-            name={['prompt_config', 'keyword']}
-            tooltip={t('keywordTip')}
-            initialValue={false}
-          >
-            <Switch />
-          </Form.Item>
+      <Form.Item
+        label={t('keyword')}
+        valuePropName="checked"
+        name={['prompt_config', 'keyword']}
+        tooltip={t('keywordTip')}
+        initialValue={false}
+      >
+        <Switch />
+      </Form.Item>
 
-          <Form.Item
-            label={t('tts')}
-            valuePropName="checked"
-            name={['prompt_config', 'tts']}
-            tooltip={t('ttsTip')}
-            initialValue={false}
-          >
-            <Switch onChange={handleTtsChange} />
-          </Form.Item>
-        </>
-      )}
+      <Form.Item
+        label={t('tts')}
+        valuePropName="checked"
+        name={['prompt_config', 'tts']}
+        tooltip={t('ttsTip')}
+        initialValue={false}
+      >
+        <Switch onChange={handleTtsChange} />
+      </Form.Item>
     </section>
   );
 };

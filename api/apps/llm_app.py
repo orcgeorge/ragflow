@@ -28,6 +28,8 @@ from api.utils.file_utils import get_project_base_directory
 from rag.llm import EmbeddingModel, ChatModel, RerankModel, CvModel, TTSModel
 from api.db.services.user_service import TenantService, UserTenantService
 import logging
+from peewee import SQL
+from api.constants import TENANT_ID_VC
 
 logging.basicConfig(level=logging.INFO)
 
@@ -346,12 +348,28 @@ def list_app():
     weighted = ["Youdao", "FastEmbed", "BAAI"] if settings.LIGHTEN != 0 else []
     model_type = request.args.get("model_type")
     try:
-        tenant_id = UserTenantService.get_tenants_by_user_id(current_user.id)[0]['tenant_id']
+
+        # 使用固定的租户ID而不是从用户获取
+        # tenant_id = UserTenantService.get_tenants_by_user_id(current_user.id)[0]['tenant_id']
+        tenant_id = TENANT_ID_VC
+
+        
+        # 记录 TenantLLMService.query 的 SQL 语句
+        query = TenantLLMService.model.select().where(TenantLLMService.model.tenant_id == tenant_id)
+
+        
         objs = TenantLLMService.query(tenant_id=tenant_id)
+        
         facts = set([o.to_dict()["llm_factory"] for o in objs if o.api_key])
+        
+        # 记录 LLMService.get_all 的 SQL 语句
+        all_llms_query = LLMService.model.select()
+        
         llms = LLMService.get_all()
+        
         llms = [m.to_dict()
                 for m in llms if m.status == StatusEnum.VALID.value and m.fid not in weighted]
+        
         for m in llms:
             m["available"] = m["fid"] in facts or m["llm_name"].lower() == "flag-embedding" or m["fid"] in self_deployed
 

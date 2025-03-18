@@ -67,7 +67,7 @@ export default {
       home: '首页',
       setting: '用户设置',
       logout: '登出',
-      fileManager: '文件管理',
+      fileManager: '文件预览',
       flow: 'Agent',
       search: '搜索',
     },

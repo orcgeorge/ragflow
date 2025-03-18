@@ -42,6 +42,7 @@ from api import settings
 from api.db.services.user_service import UserService, TenantService, UserTenantService
 from api.db.services.file_service import FileService
 from api.utils.api_utils import get_json_result, construct_response
+from api.constants import TENANT_ID_VC
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -486,7 +487,7 @@ def user_register(user_id, user):
     user["id"] = user_id
     # tenant = {
     #     "id": user_id,
-    #     "name": user["nickname"] + "‘s Kingdom",
+    #     "name": user["nickname"] + "'s Kingdom",
     #     "llm_id": settings.CHAT_MDL,
     #     "embd_id": settings.EMBEDDING_MDL,
     #     "asr_id": settings.ASR_MDL,
@@ -502,11 +503,11 @@ def user_register(user_id, user):
     # }
 
     # 1. 确保VC_ALL分组存在（使用固定ID）
-    vc_all_id = "757b8847f7fc11ef89702573f8e8e5dd"
+    vc_all_id = TENANT_ID_VC
     if not TenantService.query(id=vc_all_id):
         try:
             tenant = {
-                "id": "757b8847f7fc11ef89702573f8e8e5dd",
+                "id": TENANT_ID_VC,
                 "name": "VC_ALL",
                 "description": "Default group for all users",
                 "llm_id": settings.CHAT_MDL,
@@ -525,7 +526,7 @@ def user_register(user_id, user):
     vc_all_tenant = {
         "tenant_id": vc_all_id,
         "user_id": user_id,
-        "invited_by": "757b8847f7fc11ef89702573f8e8e5dd",
+        "invited_by": TENANT_ID_VC,
         "role": UserTenantRole.NORMAL,
     }
 
@@ -686,7 +687,7 @@ def tenant_info():
         logging.info("tenant_info")
         # tenants = TenantService.get_info_by(current_user.id)
         tenants = TenantService.get_info_all(current_user.id)
-        print("get_info_by:tenants-",tenants)
+        logging.info(tenants)
         if not tenants:
             logging.info("tenant_info not found")
             # return get_data_error_result(message="Tenant no found!")

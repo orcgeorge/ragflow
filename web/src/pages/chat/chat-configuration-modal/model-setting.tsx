@@ -21,14 +21,22 @@ const ModelSetting = ({
       const values = Object.keys(variableEnabledFieldMap).reduce<
         Record<string, boolean>
       >((pre, field) => {
-        pre[field] =
-          initialLlmSetting === undefined
-            ? true
-            : !!initialLlmSetting[
-                variableEnabledFieldMap[
-                  field as keyof typeof variableEnabledFieldMap
-                ] as keyof Variable
-              ];
+        if (field === 'maxTokensEnabled') {
+          pre[field] = initialLlmSetting === undefined ? false : !!initialLlmSetting[
+            variableEnabledFieldMap[
+              field as keyof typeof variableEnabledFieldMap
+            ] as keyof Variable
+          ];
+        } else {
+          pre[field] =
+            initialLlmSetting === undefined
+              ? true
+              : !!initialLlmSetting[
+                  variableEnabledFieldMap[
+                    field as keyof typeof variableEnabledFieldMap
+                  ] as keyof Variable
+                ];
+        }
         return pre;
       }, {});
       form.setFieldsValue(values);

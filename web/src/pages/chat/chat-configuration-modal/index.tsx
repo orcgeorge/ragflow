@@ -73,11 +73,9 @@ const ChatConfigurationModal = ({
 
   // 根据用户权限过滤可见的标签页
   const visibleSegments = useMemo(() => {
-    if (isSuperuser) {
-      return Object.values(ConfigurationSegmented);
-    }
-    return [ConfigurationSegmented.AssistantSetting];
-  }, [isSuperuser]);
+    // 所有用户都可以看到所有标签页
+    return Object.values(ConfigurationSegmented);
+  }, []);
 
   const [value, setValue] = useState<ConfigurationSegmented>(
     ConfigurationSegmented.AssistantSetting,
@@ -185,10 +183,6 @@ const ChatConfigurationModal = ({
         colon={false}
       >
         {Object.entries(segmentedMap).map(([key, Element]) => {
-          // 如果不是管理员且不是助理设置页面，则不渲染
-          if (!isSuperuser && key !== ConfigurationSegmented.AssistantSetting) {
-            return null;
-          }
           return (
             <Element
               key={key}

@@ -38,10 +38,9 @@ const RagHeader = () => {
       { path: '/file', name: t('fileManager'), icon: FileIcon },
     ];
 
-    // 如果不是管理员，过滤掉 knowledgeBase 和 flow 标签
     return isSuperuser
       ? allTags
-      : allTags.filter((tag) => !['/knowledge', '/flow'].includes(tag.path));
+      : allTags.filter((tag) => tag.path !== '/flow');
   }, [t, isSuperuser]);
 
   const currentPath = useMemo(() => {

@@ -38,43 +38,66 @@ class FileService(CommonService):
 
     @classmethod
     @DB.connection_context()
-    def get_by_pf_id(cls, tenant_id, pf_id, page_number, items_per_page,
+    def get_by_pf_id(cls, user_id, pf_id, page_number, items_per_page,
                      orderby, desc, keywords):
+        #logging.info(f"开始获取文件列表, user_id={user_id}, pf_id={pf_id}, page={page_number}, size={items_per_page}")
+        
+        # 获取用户所属的所有租户ID
+        from api.db.services.user_service import TenantService
+        tenant_list = TenantService.get_joined_tenants_by_user_id(user_id)
+        tenant_ids = [tenant['tenant_id'] for tenant in tenant_list]
+        #logging.info(f"用户所属租户列表: {tenant_ids}")
+        
         if keywords:
+            #logging.info(f"使用关键词搜索: {keywords}")
             files = cls.model.select().where(
-                (cls.model.tenant_id == tenant_id),
+                (cls.model.tenant_id.in_(tenant_ids)),
                 (cls.model.parent_id == pf_id),
                 (fn.LOWER(cls.model.name).contains(keywords.lower())),
                 ~(cls.model.id == pf_id)
             )
         else:
-            files = cls.model.select().where((cls.model.tenant_id == tenant_id),
-                                             (cls.model.parent_id == pf_id),
-                                             ~(cls.model.id == pf_id)
-                                             )
+            #logging.info("无关键词搜索")
+            files = cls.model.select().where(
+                (cls.model.tenant_id.in_(tenant_ids)),
+                (cls.model.parent_id == pf_id),
+                ~(cls.model.id == pf_id)
+            )
         count = files.count()
+        #logging.info(f"查询到总文件数: {count}")
+
         if desc:
+            #logging.info(f"按{orderby}降序排序")
             files = files.order_by(cls.model.getter_by(orderby).desc())
         else:
+            #logging.info(f"按{orderby}升序排序") 
             files = files.order_by(cls.model.getter_by(orderby).asc())
 
         files = files.paginate(page_number, items_per_page)
+        #logging.info(f"分页后获取到{len(files)}条记录")
 
         res_files = list(files.dicts())
         for file in res_files:
+            #logging.info(f"处理文件: {file['name']}")
             if file["type"] == FileType.FOLDER.value:
+                #logging.info("文件类型为文件夹")
                 file["size"] = cls.get_folder_size(file["id"])
                 file['kbs_info'] = []
                 children = list(cls.model.select().where(
-                    (cls.model.tenant_id == tenant_id),
+                    (cls.model.tenant_id.in_(tenant_ids)),
                     (cls.model.parent_id == file["id"]),
                     ~(cls.model.id == file["id"]),
                 ).dicts())
-                file["has_child_folder"] = any(value["type"] == FileType.FOLDER.value for value in children)                       
+                file["has_child_folder"] = any(value["type"] == FileType.FOLDER.value for value in children)
+                #logging.info(f"文件夹大小: {file['size']}, 是否有子文件夹: {file['has_child_folder']}")                       
                 continue
+            
+            #logging.info("获取文件关联的知识库信息")
             kbs_info = cls.get_kb_id_by_file_id(file['id'])
             file['kbs_info'] = kbs_info
+            #logging.info(f"关联知识库数量: {len(kbs_info)}")
 
+        #logging.info("文件列表获取完成")
         return res_files, count
 
     @classmethod
@@ -157,15 +180,18 @@ class FileService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_root_folder(cls, tenant_id):
-        for file in cls.model.select().where((cls.model.tenant_id == tenant_id),
-                                        (cls.model.parent_id == cls.model.id)
+        # 首先查询是否已存在名为.knowledgebase的文件
+        for file in cls.model.select().where(
+                                        (cls.model.name == "/")
                                         ):
+            # 如果找到了就直接返回
             return file.to_dict()
 
+        # 如果没有找到根文件夹,则创建一个新的根文件夹
         file_id = get_uuid()
         file = {
             "id": file_id,
-            "parent_id": file_id,
+            "parent_id": file_id,  # 根文件夹的parent_id指向自己
             "tenant_id": tenant_id,
             "created_by": tenant_id,
             "name": "/",
@@ -173,6 +199,9 @@ class FileService(CommonService):
             "size": 0,
             "location": "",
         }
+        # 保存新建的根文件夹到数据库
+        # cls.save(**file)会创建文件夹,但不会触发上面的return
+        # 因为这是两次独立的数据库操作
         cls.save(**file)
         return file
 
@@ -180,9 +209,8 @@ class FileService(CommonService):
     @DB.connection_context()
     def get_kb_folder(cls, tenant_id):
         for root in cls.model.select().where(
-                (cls.model.tenant_id == tenant_id), (cls.model.parent_id == cls.model.id)):
+                (cls.model.name == '/')):
             for folder in cls.model.select().where(
-                    (cls.model.tenant_id == tenant_id), (cls.model.parent_id == root.id),
                     (cls.model.name == KNOWLEDGEBASE_FOLDER_NAME)):
                 return folder.to_dict()
         assert False, "Can't find the KB folder. Database init error."
@@ -209,8 +237,7 @@ class FileService(CommonService):
     @classmethod
     @DB.connection_context()
     def init_knowledgebase_docs(cls, root_id, tenant_id):
-        for _ in cls.model.select().where((cls.model.name == KNOWLEDGEBASE_FOLDER_NAME)\
-                                          & (cls.model.parent_id == root_id)):
+        for _ in cls.model.select().where((cls.model.name == KNOWLEDGEBASE_FOLDER_NAME)):
             return
         folder = cls.new_a_file_from_kb(tenant_id, KNOWLEDGEBASE_FOLDER_NAME, root_id)
 

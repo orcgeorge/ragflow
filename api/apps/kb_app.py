@@ -58,12 +58,17 @@ def create():
         status=StatusEnum.VALID.value)
     try:
         req["id"] = get_uuid()
-        req["tenant_id"] = current_user.id
         req["created_by"] = current_user.id
-        e, t = TenantService.get_by_id(current_user.id)
-        if not e:
+        
+        # 获取用户所属的租户信息
+        owner_tenants = TenantService.get_owner_tenants_by_user_id(current_user.id)
+        if not owner_tenants:
             return get_data_error_result(message="Tenant not found.")
-        req["embd_id"] = t.embd_id
+        
+        # 使用第一个租户的 embd_id
+        req["embd_id"] = owner_tenants[0]["embd_id"]
+        req["tenant_id"] = owner_tenants[0]["tenant_id"]
+        
         if not KnowledgebaseService.save(**req):
             return get_data_error_result()
         return get_json_result(data={"kb_id": req["id"]})
